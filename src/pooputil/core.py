@@ -11,7 +11,6 @@ import zipfile
 from pathlib import Path
 
 from cryptography.exceptions import InvalidTag
-from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives.kdf.scrypt import Scrypt
 
@@ -34,7 +33,7 @@ class InvalidPoopFile(Exception):
 
 
 def get_key(password: bytes, salt: bytes) -> bytes:
-    kdf = Scrypt(salt=salt, length=32, n=2 ** 14, r=8, p=1, backend=default_backend())
+    kdf = Scrypt(salt=salt, length=32, n=2 ** 14, r=8, p=1)
     return kdf.derive(password)
 
 
@@ -79,6 +78,23 @@ def _open_read_nofollow(path: str):
         os.close(fd)
         raise ValueError("File changed while it was being opened (TOCTOU); aborting.")
     return fd
+
+
+def _open_exclusive_temp(temp_path: str) -> int:
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_BINARY", 0)
+    return os.open(temp_path, flags)
+
+
+def _peek_file_type(filepath: str) -> bytes:
+    prefix_len = len(MAGIC) + len(VERSION) + 1
+    try:
+        with open(filepath, "rb") as fh:
+            prefix = fh.read(prefix_len)
+    except OSError:
+        return b""
+    if len(prefix) != prefix_len or not prefix.startswith(MAGIC + VERSION):
+        return b""
+    return prefix[len(MAGIC) + len(VERSION):]
 
 
 def secure_delete(filepath: str) -> None:
@@ -130,15 +146,17 @@ def process_encryption(source_path: str, output_path: str,
     iv = os.urandom(IV_LEN)
     key = get_key(password, salt)
 
-    encryptor = Cipher(algorithms.AES(key), modes.GCM(iv),
-                       backend=default_backend()).encryptor()
+    encryptor = Cipher(algorithms.AES(key), modes.GCM(iv)).encryptor()
     header = MAGIC + VERSION + file_type + salt + iv
     encryptor.authenticate_additional_data(header)
 
     temp_path = output_path + ".tmp"
+    created = False
     try:
-        fd = _open_read_nofollow(source_path)
-        with os.fdopen(fd, "rb") as f_in, open(temp_path, "wb") as f_out:
+        fd = _open_exclusive_temp(temp_path)
+        created = True
+        with os.fdopen(fd, "wb") as f_out, \
+             os.fdopen(_open_read_nofollow(source_path), "rb") as f_in:
             f_out.write(header + b"\x00" * TAG_LEN)
             while True:
                 chunk = f_in.read(CHUNK_SIZE)
@@ -152,10 +170,11 @@ def process_encryption(source_path: str, output_path: str,
             os.fsync(f_out.fileno())
         os.replace(temp_path, output_path)
     except Exception:
-        try:
-            os.remove(temp_path)
-        except OSError:
-            pass
+        if created:
+            try:
+                os.remove(temp_path)
+            except OSError:
+                pass
         raise
 
 
@@ -177,13 +196,15 @@ def process_decryption(source_path: str, output_path: str, password: bytes) -> b
             raise InvalidPoopFile("File is truncated or not a valid .poop file.")
 
         key = get_key(password, salt)
-        decryptor = Cipher(algorithms.AES(key), modes.GCM(iv, tag),
-                           backend=default_backend()).decryptor()
+        decryptor = Cipher(algorithms.AES(key), modes.GCM(iv, tag)).decryptor()
         decryptor.authenticate_additional_data(MAGIC + VERSION + file_type + salt + iv)
 
         temp_path = output_path + ".tmp"
+        created = False
         try:
-            with open(temp_path, "wb") as f_out:
+            fd = _open_exclusive_temp(temp_path)
+            created = True
+            with os.fdopen(fd, "wb") as f_out:
                 while True:
                     chunk = f_in.read(CHUNK_SIZE)
                     if not chunk:
@@ -197,10 +218,11 @@ def process_decryption(source_path: str, output_path: str, password: bytes) -> b
                 os.fsync(f_out.fileno())
             os.replace(temp_path, output_path)
         except Exception:
-            try:
-                os.remove(temp_path)
-            except OSError:
-                pass
+            if created:
+                try:
+                    os.remove(temp_path)
+                except OSError:
+                    pass
             raise
     return file_type
 
@@ -227,7 +249,7 @@ def _extract_zip(zip_path: str, dest_dir: str) -> None:
         raise InvalidPoopFile("Decrypted payload is not a valid ZIP archive.") from exc
 
 
-def encrypt_target(target_path: str, password: bytes) -> str:
+def encrypt_target(target_path: str, password: bytes, force: bool = False) -> str:
     target_path = target_path.rstrip(os.sep + (os.altsep or "")) or target_path
 
     if not os.path.lexists(target_path):
@@ -237,6 +259,12 @@ def encrypt_target(target_path: str, password: bytes) -> str:
     if not is_safe_path(target_path):
         raise ValueError(f"Refusing to encrypt unsafe path: {target_path}")
 
+    output_filepath = target_path + ".poop"
+    if os.path.lexists(output_filepath) and not force:
+        raise FileExistsError(
+            f"Refusing to overwrite existing file: {output_filepath} "
+            "(pass force=True to overwrite it)")
+
     is_folder = os.path.isdir(target_path)
     if is_folder:
         zip_path = shutil.make_archive(target_path, "zip", target_path)
@@ -244,7 +272,6 @@ def encrypt_target(target_path: str, password: bytes) -> str:
     else:
         zip_path, file_to_encrypt, file_type = None, target_path, TYPE_FILE
 
-    output_filepath = target_path + ".poop"
     try:
         process_encryption(file_to_encrypt, output_filepath, password, file_type)
     finally:
@@ -258,7 +285,7 @@ def encrypt_target(target_path: str, password: bytes) -> str:
     return output_filepath
 
 
-def decrypt_target(filepath: str, password: bytes) -> str:
+def decrypt_target(filepath: str, password: bytes, force: bool = False) -> str:
     if not filepath.endswith(".poop"):
         raise InvalidPoopFile("Input must have a .poop extension.")
     if os.path.islink(filepath):
@@ -269,16 +296,35 @@ def decrypt_target(filepath: str, password: bytes) -> str:
         raise ValueError(f"Refusing to decrypt unsafe path: {filepath}")
 
     output_filepath = filepath[:-len(".poop")]
-    file_type = process_decryption(filepath, output_filepath, password)
+    if os.path.lexists(output_filepath) and not force:
+        raise FileExistsError(
+            f"Refusing to overwrite existing file: {output_filepath} "
+            "(pass force=True to overwrite it)")
 
-    try:
-        if file_type == TYPE_FOLDER:
-            if not output_filepath.endswith(".zip"):
-                raise InvalidPoopFile("Folder payload did not decrypt to a .zip file.")
-            extract_dir = output_filepath[:-len(".zip")]
-            _extract_zip(output_filepath, extract_dir)
-            secure_delete(output_filepath)
-            return extract_dir
-        return output_filepath
-    finally:
+    file_type = _peek_file_type(filepath)
+
+    if file_type == TYPE_FOLDER:
+        zip_path = output_filepath + ".zip"
+        if os.path.lexists(zip_path) and not force:
+            raise FileExistsError(
+                f"Refusing to overwrite existing file: {zip_path} "
+                "(pass force=True to overwrite it)")
+        decrypted_type = process_decryption(filepath, zip_path, password)
+        if decrypted_type != TYPE_FOLDER:
+            secure_delete(zip_path)
+            raise InvalidPoopFile("Container type changed between header and decrypt.")
+        try:
+            _extract_zip(zip_path, output_filepath)
+        except Exception:
+            secure_delete(zip_path)
+            raise
+        secure_delete(zip_path)
         secure_delete(filepath)
+        return output_filepath
+
+    decrypted_type = process_decryption(filepath, output_filepath, password)
+    if decrypted_type != TYPE_FILE:
+        secure_delete(output_filepath)
+        raise InvalidPoopFile("Container type changed between header and decrypt.")
+    secure_delete(filepath)
+    return output_filepath
