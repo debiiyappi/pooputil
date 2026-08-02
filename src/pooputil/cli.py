@@ -1,7 +1,7 @@
 import sys
 import argparse
 import os
-import core
+from pooputil import core
 
 def main():
     parser = argparse.ArgumentParser(description="Pooputil CLI - Core Hardware Cryptographic Engine")
