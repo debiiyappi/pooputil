@@ -1,13 +1,13 @@
 # 💩 pooputil
 
-> Ever heard of ransomware?
+> Ever heard of malware?
 >
 > One of the first things it usually does is scan your drive for common file extensions.
 >
 > ```
 > .docx .xlsx .pptx
 > .pdf  .jpg  .png
-> .zip  .sql  .db
+> .zip  .zip  .txt
 > ```
 >
 > Your files are predictable.
@@ -18,7 +18,7 @@
 
 Instead of just hiding files somewhere, pooputil compresses them, encrypts them using **AES-256-GCM**, derives keys using **Scrypt**, and can optionally overwrite the original file after encryption.
 
-Whether you're storing backups, documents or just wanna archive stuff safely, pooputil gives you a Python API, CLI and a simple desktop GUI.
+Whether youre storing backups, documents or just wanna archive stuff safely, pooputil gives you a Python API, CLI and a simple desktop GUI.
 
 > **v0.0.2**
 >
@@ -63,9 +63,9 @@ Will this stop malware?
 
 Probably not.
 
-If malware wants to encrypt every file on your disk it'll happily encrypt `.poop` too.
+If malware wants to encrypt every file on your disk itll happily encrypt `.poop` too.
 
-The idea here isn't to beat ransomware, it's to make your actual file contents unreadable without the password while also giving you a funny file extension.
+The idea here isnt to beat malware, its to make your actual file contents unreadable without the password while also giving you a funny file extension.
 
 ---
 
@@ -114,9 +114,9 @@ I use the `cryptography` library instead of trying to implement crypto myself.
 
 # Secure deletion
 
-After encryption pooputil can overwrite the original file before deleting it.
+After encryption pooputil can overwrite the original file before deleting it
 
-Keep in mind secure deletion depends on your filesystem and storage device. SSDs especially don't always behave the same because of wear leveling.
+Keep in mind secure deletion depends on your filesystem and storage device SSDs especially don't always behave the same because of wear leveling
 
 ---
 
@@ -195,9 +195,11 @@ This project is meant for legitimate encryption and backup purposes.
 
 Also...
 
-Don't forget your password.
+Dont forget your password.
 
-I can't magically decrypt your `.poop` if you lose it.
+I cant magically decrypt your `.poop` if you lose it.
+
+You cant unflush a poop if you flushed it.
 
 ---
 
