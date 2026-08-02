@@ -1,76 +1,200 @@
 # 💩 pooputil
 
-Industrial-grade, memory-hard cryptographic engine and toolkit utilizing the `.poop` file extension
-Other apps just hide your data. `pooputil` compresses your files, encrypts them to `.poop` containers, and then literally shreds the original files off your drive so forensic recovery tools find absolutely nothing. It is a clean, absolute wipe. My bad about the broken module imports in v0.0.1, everything flows perfectly now in v0.0.2!
+> Ever heard of ransomware?
+>
+> One of the first things it usually does is scan your drive for common file extensions.
+>
+> ```
+> .docx .xlsx .pptx
+> .pdf  .jpg  .png
+> .zip  .sql  .db
+> ```
+>
+> Your files are predictable.
+>
+> `pooputil` changes that.
 
-Licensed under the copyleft **GNU GPLv3**. Take the source code, fork it, and build your own toolkit on top of it
+`pooputil` is a small open-source file encryption utility that compresses your files into encrypted **.poop** containers.
+
+Instead of just hiding files somewhere, pooputil compresses them, encrypts them using **AES-256-GCM**, derives keys using **Scrypt**, and can optionally overwrite the original file after encryption.
+
+Whether you're storing backups, documents or just wanna archive stuff safely, pooputil gives you a Python API, CLI and a simple desktop GUI.
+
+> **v0.0.2**
+>
+> Fixed the broken imports from v0.0.1. Everything should work properly now.
+
+Licensed under **GPLv3**. Fork it, improve it or build your own project on top of it.
 
 ---
 
-## 🛠️ Infrastructure Core Design
-`pooputil` is structured like Arduino. The foundational backend logic (**pooputil core**) is completely separated from the graphical user interface. You can import the core logic programmatically into your own automation pipelines without loading any bulk GUI dependencies.
+# Features
 
-*   **Encryption Pipeline:** AES-256-GCM (Authenticated Encryption with Associated Data). It doesnt just encrypt; it mathematically guarantees your data hasnt been tampered with.
-*   **Key Derivation Function (KDF):** Scrypt. A highly specialized, memory-hard algorithm specifically engineered to resist hardware-accelerated GPU/ASIC brute-force cracking rigs.
-*   **Data Sanitization:** Algorithmic zero-and-random-fill secure shredding matrix. The original file is obliterated before standard deletion.
+- AES-256-GCM authenticated encryption
+- Scrypt password derivation
+- Compress before encrypting
+- Custom `.poop` container format
+- Python API
+- CLI
+- Desktop GUI
+- Optional overwrite-based deletion
+- Backend separated from GUI
 
 ---
 
-## Installation
+# Why `.poop`?
 
-Install the compiled library binaries straight from PyPI using any system terminal pathway:
+A lot of malware targets common file extensions.
 
+```
+.docx
+.xlsx
+.pdf
+.jpg
+.png
+.zip
+```
 
+Those are easy to recognize.
+
+pooputil stores encrypted data inside `.poop` containers instead.
+
+Will this stop malware?
+
+Probably not.
+
+If malware wants to encrypt every file on your disk it'll happily encrypt `.poop` too.
+
+The idea here isn't to beat ransomware, it's to make your actual file contents unreadable without the password while also giving you a funny file extension.
+
+---
+
+# Architecture
+
+pooputil is split into modules kinda like Arduino.
+
+```
+GUI
+ │
+ ▼
+pooputil.core
+ ▲
+ │
+CLI
+ │
+ ▼
+Python API
+```
+
+The GUI is just a frontend.
+
+Most of the work happens inside `pooputil.core`, so you can import it directly into your own scripts without dragging GUI stuff along.
+
+---
+
+# Crypto
+
+| Component | Algorithm |
+|-----------|-----------|
+| Encryption | AES-256-GCM |
+| KDF | Scrypt |
+| Salt | 16 bytes |
+| Nonce | 12 bytes |
+| Authentication | GCM Tag |
+
+I use the `cryptography` library instead of trying to implement crypto myself.
+
+---
+
+# Secure deletion
+
+After encryption pooputil can overwrite the original file before deleting it.
+
+Keep in mind secure deletion depends on your filesystem and storage device. SSDs especially don't always behave the same because of wear leveling.
+
+---
+
+# Installation
+
+```bash
 pip install pooputil
-
+```
 
 ---
 
-##  Operation
+# Usage
 
-### 1. Launching the Graphical Toolkit (GUI)
-If you want to use the standard desktop UI workspace panel with simple mouse clicks, execute the graphical macro shortcut:
+## GUI
 
-
+```bash
 pooputil-gui
+```
 
-*(Alternatively, run `python -m pooputil` to launch the exact same layout window.)*
+or
 
-### 2. Utilizing the CLI Engine (Command Line Interface)
-Perfect for headless servers, backup tasks, cron jobs, or executing tasks inside scripting setups.
-
-*   **To Compress, Secure, and Shred a File/Folder:**
-   
-    pooputil-cli --encrypt "/path/to/classified_assets" --password "SuperSecretKey99"
-    
-*   **To Flush and Restore from a `.poop` Payload Container:**
-    
-    pooputil-cli --decrypt "/path/to/classified_assets.poop" --password "SuperSecretKey99"
-  
+```bash
+python -m pooputil
+```
 
 ---
 
-##  Developer Implementation API (Importing the Core)
-If you are another software engineer looking to harness the heavy-lifting capabilities of the `pooputil` ecosystem inside your custom scripts, tap directly into our exposed library endpoints:
+## CLI
 
+Encrypt
 
+```bash
+pooputil-cli --encrypt "/path/to/data" --password "SuperSecretKey99"
+```
+
+Decrypt
+
+```bash
+pooputil-cli --decrypt "/path/to/data.poop" --password "SuperSecretKey99"
+```
+
+---
+
+# Python API
+
+```python
 from pooputil import core
 
-secret_password = b"PremiumDevPass123"
-target_item = "./confidential_payroll.csv"
+password = b"SuperSecretPassword"
+target = "./important.docx"
 
-# Verify path bounds to prevent bricking system directories
-if core.is_safe_path(target_item):
-    print("Path verified. Commencing data digestion...")
-    
-
+if core.is_safe_path(target):
+    core.encrypt_target(target, password)
 else:
-    print("Operation rejected! Target path falls inside restricted system pathways.")
+    print("Unsafe path.")
+```
 
+Decrypt
 
-To reconstruct a `.poop` payload container back to its raw file or unpacked folder state:
-
+```python
 from pooputil import core
 
-restored_path = core.decrypt_target("./confidential_payroll.csv.poop", b"PremiumDevPass123")
-print(f"Data verification passed. Restored to: {restored_path}")
+restored = core.decrypt_target(
+    "./important.docx.poop",
+    b"SuperSecretPassword"
+)
+
+print(restored)
+```
+
+---
+
+# Disclaimer
+
+This project is meant for legitimate encryption and backup purposes.
+
+Also...
+
+Don't forget your password.
+
+I can't magically decrypt your `.poop` if you lose it.
+
+---
+
+# License
+
+GPLv3.
