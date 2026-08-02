@@ -1,7 +1,7 @@
 # 💩 pooputil
 
 Industrial-grade, memory-hard cryptographic engine and toolkit utilizing the `.poop` file extension
-Other apps just hide your data. `pooputil` compresses your files, encrypts them using premium cryptographic primitives, and then literally shreds the original files off your drive so forensic recovery tools find absolutely nothing. It is a clean, absolute wipe. My bad about the broken module imports in v0.0.1, everything flows perfectly now in v0.0.2!
+Other apps just hide your data. `pooputil` compresses your files, encrypts them to `.poop` containers, and then literally shreds the original files off your drive so forensic recovery tools find absolutely nothing. It is a clean, absolute wipe. My bad about the broken module imports in v0.0.1, everything flows perfectly now in v0.0.2!
 
 Licensed under the copyleft **GNU GPLv3**. Take the source code, fork it, and build your own toolkit on top of it
 
