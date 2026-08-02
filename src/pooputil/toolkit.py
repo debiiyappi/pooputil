@@ -2,7 +2,7 @@ import os
 import tkinter as tk
 from tkinter import messagebox, filedialog
 from cryptography.exceptions import InvalidTag
-import core
+from pooputil import core
 
 class PooputilToolkitApp:
     def __init__(self, root):
