@@ -69,6 +69,12 @@ The idea here isn't to beat ransomware, it's to make your actual file contents u
 
 ---
 
+## Fun Fact
+
+The `.poop` file extension was inspired by **No Text To Speech**.
+
+If you know, you know.
+
 # Architecture
 
 pooputil is split into modules kinda like Arduino.
