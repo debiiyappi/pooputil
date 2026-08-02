@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pooputil"
+version = "1.0.0"
+description = "Industrial-grade AES-GCM encryption toolkit utilizing the .poop extension standard."
+readme = "README.md"
+requires-python = ">=3.7"
+license = { text = "GPL-3.0-only" }
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "cryptography>=41.0.0"
+]
+
+[project.scripts]
+pooputil-cli = "pooputil.cli:main"
+pooputil-gui = "pooputil.toolkit:main"
