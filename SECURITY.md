@@ -19,9 +19,7 @@ Report privately to **debiiyapp@gmail.com** with:
 - Affected versions
 - Suggested fix (optional)
 
-Expected response time: confirmation within 48 hours,
-status update within 7 days. We coordinate disclosure timing
-with the reporter.
+Expected response time: i am alone and a solo devs here the expected is random.
 
 ## Container Format (v2)
 
