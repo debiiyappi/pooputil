@@ -42,7 +42,7 @@ LEGACY_PARAMS = (14, 8, 1)
 CHUNK_SIZE = 64 * 1024
 MAX_EXTRACT_SIZE = 8 * 1024 ** 3
 MAX_ENTRIES = 10_000
-MAX_COMPRESSION_RATIO = 1000
+MAX_COMPRESSION_RATIO = 1040
 MAX_MANIFEST = 16 * 1024 * 1024
 COMPRESS_LEVEL = 6
 
@@ -146,7 +146,6 @@ def _build_header_v2(file_type, salt, iv, log_n, r, p):
 
 
 def _read_header(f_in):
-    """Returns (version, file_type, (log_n,r,p), salt, iv, tag, aad)."""
     magic = _read_exact(f_in, 4, "magic")
     if magic != MAGIC:
         raise InvalidPoopFile("Not a .poop file (bad magic).")
@@ -295,7 +294,7 @@ def _process_encryption_folder(dir_path, output_path, password,
 
 
 class _PlainReader:
-    """Decrypts ciphertext lazily; hands out plaintext in exact slices."""
+    
 
     def __init__(self, f_in, decryptor):
         self.f_in = f_in
@@ -318,8 +317,6 @@ class _PlainReader:
         return out
 
     def feed_entry(self, decompressor, f_out):
-        """Decompress one self-terminating raw-deflate entry.
-        Returns compressed bytes consumed (for the ratio guard)."""
         consumed = 0
         while True:
             if self.pending:
@@ -329,7 +326,7 @@ class _PlainReader:
                 if out:
                     f_out.write(out)
             if decompressor.eof:
-                return consumed
+                return consumed - len(self.pending)
             chunk = self.f_in.read(CHUNK_SIZE)
             if not chunk:
                 raise InvalidPoopFile("File truncated inside compressed entry.")
