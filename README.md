@@ -20,9 +20,8 @@ Instead of just hiding files somewhere, pooputil compresses them, encrypts them 
 
 Whether youre storing backups, documents or just wanna archive stuff safely, pooputil gives you a Python API, CLI and a simple desktop GUI.
 
-> **v0.0.2**
->
-> Fixed the broken imports from v0.0.1. Everything should work properly now.
+> Current Ver
+> **v0.1.0**
 
 Licensed under **GPLv3**. Fork it, improve it or build your own project on top of it.
 
