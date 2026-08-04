@@ -4,7 +4,7 @@
 
 | Version        | Container | Supported          |
 | -------------- | --------- | ------------------ |
-| 0.2.x          | v2        | :white_check_mark: |
+| 0.1.1          | v2        | :white_check_mark: |
 | 0.1.x          | v1        | :warning: read-only decryption only |
 | < 0.1          | -         | :x:                |
 
