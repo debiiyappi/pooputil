@@ -6,7 +6,7 @@
 
 | Version | Supported          | Security Updates |
 | 1.x     | :white_check_mark: | Full support     |
-| < 0.0.3   | :x:                | Unsupported      |
+| < 0.0.3 | :x:                | Unsupported      |
 
 ---
 
