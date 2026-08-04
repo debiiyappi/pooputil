@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pooputil"
-version = "0.2.0"
+version = "0.1.1"
 description = "AES-GCM encryption toolkit utilizing the .poop extension standard."
 readme = "README.md"
 requires-python = ">=3.9"
