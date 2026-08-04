@@ -1,14 +1,28 @@
-import sys
-import argparse
-import os
+import argparse, getpass, os, sys
 from pooputil import core
 
+def _resolve_password(args) -> bytes:
+    if args.password:
+        return args.password.encode()
+    if os.environ.get("POOPUTIL_PASSWORD"):
+        return os.environ["POOPUTIL_PASSWORD"].encode()
+    pw = getpass.getpass("Secret password: ")
+    if args.encrypt:
+        pw2 = getpass.getpass("Confirm password: ")
+        if pw != pw2:
+            print("Error: passwords do not match.", file=sys.stderr)
+            sys.exit(1)
+    return pw.encode()
+
 def main():
-    parser = argparse.ArgumentParser(description="Pooputil CLI - Core Hardware Cryptographic Engine")
+    parser = argparse.ArgumentParser(description="Pooputil CLI")
     group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument("-e", "--encrypt", help="Target path of the file/folder to encrypt.")
-    group.add_argument("-d", "--decrypt", help="Target path of the .poop file to decrypt.")
-    parser.add_argument("-p", "--password", required=True, help="Secret password string.")
+    group.add_argument("-e", "--encrypt", help="Target path to encrypt.")
+    group.add_argument("-d", "--decrypt", help="Target .poop file to decrypt.")
+    parser.add_argument("-p", "--password", help="Password (optional; prompts if omitted).")
+    args = parser.parse_args()
+    password_bytes = _resolve_password(args)
+    
 
     args = parser.parse_args()
     password_bytes = args.password.encode()
