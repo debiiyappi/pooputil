@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Raised `MAX_COMPRESSION_RATIO` threshold from `1000:1` to `1040:1` to eliminate false-positive zip bomb rejections on highly compressible data (e.g., zero-filled files) approaching Deflate's theoretical maximum ratio of `1032:1`.
 - Corrected byte accounting in `_PlainReader.feed_entry()` to subtract unconsumed trailing bytes (`decompressor.unused_data`) from `consumed` upon hitting `decompressor.eof`.
 
-## [2.0.0]
+## [0.1.2]
 
 ### Added
 - v2 container format:
