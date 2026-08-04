@@ -1,41 +1,43 @@
 # Changelog
 
-All notable changes documented here.
-Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
-Versioning: [Semantic Versioning](https://semver.org/)
+All notable changes to pooputil are documented in this file.
 
-## [Unreleased]
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
 
 ### Added
-- `--password` now optional: interactive `getpass` prompt,
-  with double-entry confirmation on encrypt
-- `POOPUTIL_PASSWORD` environment variable fallback
-- Built-in deflate compression inside the `.poop` container —
-  no intermediate plaintext zip (single-file and folder modes)
-- Encrypted manifest in folder containers (paths, sizes, mtimes, modes)
-- KDF parameters written to the container header
-- `SECURITY.md`
+- v2 container format:
+  - KDF parameters (log2 N, r, p) and compression method stored in the
+    plaintext header, bound by GCM AAD
+  - built-in raw DEFLATE streaming inside the GCM ciphertext — no
+    intermediate plaintext ZIP is ever written to disk
+  - encrypted manifest in folder containers (relative path, size, mtime,
+    mode), restored on decrypt
+- `--password` is now optional: interactive `getpass` prompt with
+  double-entry confirmation when encrypting
+- `POOPUTIL_PASSWORD` environment variable as a password fallback
+- Extraction defenses: entry-count cap (10 000), total-size cap (8 GiB),
+  per-entry compression-ratio cap (1000:1), manifest path validation
+- `SECURITY.md` with supported versions and vulnerability reporting
 
 ### Changed
-- Scrypt cost raised to `n=2^17` (128 MiB)
-- Version now single-sourced; `pooputil --version` added
-
-### Security
-- Zip-bomb extraction guards: total size, per-entry size,
-  entry-count and compression-ratio caps
-- Header now authenticates KDF params and compression method
-
-## [0.1.0] - 2026-08-04
+- Scrypt cost raised from n=2^14 to n=2^17 (r=8, p=1) for new containers
+- KDF now uses `hashlib.scrypt` (explicit `maxmem`) instead of the
+  `cryptography` wrapper
+- v1 containers remain decryptable via a legacy path (read-only)
+- Encryption/decryption now streams one file at a time with bounded memory
 
 ### Fixed
-- Broken imports from v0.0.1
-
-## [0.0.2] - unreleased
+- CLI: dead duplicate `parser.parse_args()` / `args.password.encode()`
+  lines removed so the interactive password prompt actually runs
+- Folder encryption no longer silently overwrites a sibling `.zip` file
 
 ### Fixed
-- Broken imports from v0.0.1
-
-## [0.0.1] - initial release
+- Broken imports from v0.0.1; package structure moved under `src/`
 
 ### Added
-- AES-256-GCM encryption, Scrypt KDF, CLI, GUI, Python API
+- AES-256-GCM encryption with Scrypt key derivation
+- Custom `.poop` container format
+- CLI, desktop GUI and Python API
+- Secure overwrite-based deletion of originals
