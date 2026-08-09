@@ -1,5 +1,12 @@
-"""Copyright (C) 2026 debiiyappi <debiiyapp@gmail.com>
-GPLv3. pooputil CLI — thin frontend over pooputil.core."""
+"""
+Copyright (C) 2026 debiiyappi <debiiyapp@gmail.com>
+
+pooputil CLI — thin frontend over pooputil.core.
+
+Licensed under the GNU General Public License, Version 3 (GPLv3).
+You are free to copy, modify, and redistribute this software under
+the terms of the license.
+"""
 
 import argparse
 import getpass
