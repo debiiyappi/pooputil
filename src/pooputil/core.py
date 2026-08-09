@@ -458,7 +458,18 @@ def _process_decryption_folder(source_path, dest_dir, password):
         decryptor.authenticate_additional_data(aad)
         reader = _PlainReader(f_in, decryptor)
         manifest_len = struct.unpack("<I", reader.read_exact(4, "manifest length"))[0]
-        manifest = json.loads(reader.read_exact(manifest_len, "manifest"))
+        
+        max_possible_len = os.path.getsize(source_path)
+        
+        if manifest_len > max_possible_len or manifest_len > 100 * 1024 * 1024:
+            raise InvalidPoopFile("Manifest length is impossibly large. You definitely entered the wrong password!")
+            
+        try:
+            manifest_bytes = reader.read_exact(manifest_len, "manifest")
+            manifest = json.loads(manifest_bytes)
+        except (InvalidPoopFile, json.JSONDecodeError):
+            raise InvalidPoopFile("Manifest is corrupted or unreadable. Double-check your password!")
+        
         dest_root = Path(dest_dir).resolve()
         _validate_manifest(manifest, dest_root)
         os.makedirs(dest_dir, exist_ok=True)
