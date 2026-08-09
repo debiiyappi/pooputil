@@ -1,10 +1,9 @@
-"""Copyright (C) 2026 debiiyappi <debiiyapp@gmail.com>
-GPLv3. pooputil core — AES-256-GCM + scrypt + built-in raw-deflate.
+"""
+Copyright (C) 2026 debiiyappi <debiiyapp@gmail.com>
 
-v2 containers: KDF params + compression method live in the header (all
-covered by GCM AAD), payload is stream-compressed in one pass — no
-intermediate plaintext zip ever touches disk. v1 containers still
-decrypt via a legacy path.
+Licensed under the GNU General Public License, Version 3 (GPLv3).
+You are free to copy, modify, and redistribute this software under
+the terms of the license.
 """
 
 import hashlib
@@ -40,10 +39,6 @@ KDF_P = 1
 LEGACY_PARAMS = (14, 8, 1)
 
 CHUNK_SIZE = 64 * 1024
-MAX_EXTRACT_SIZE = 8 * 1024 ** 3
-MAX_ENTRIES = 10_000
-MAX_COMPRESSION_RATIO = 1040
-MAX_MANIFEST = 16 * 1024 * 1024
 COMPRESS_LEVEL = 6
 
 
@@ -51,12 +46,10 @@ class InvalidPoopFile(Exception):
     pass
 
 
-
 def get_key(password: bytes, salt: bytes,
             log_n: int = KDF_LOG_N, r: int = KDF_R, p: int = KDF_P) -> bytes:
     return hashlib.scrypt(password, salt=salt, n=1 << log_n, r=r, p=p,
                           maxmem=512 * 1024 * 1024, dklen=32)
-
 
 
 def is_safe_path(target_path: str) -> bool:
@@ -139,7 +132,6 @@ def secure_rmtree(path: str) -> None:
         pass
 
 
-
 def _build_header_v2(file_type, salt, iv, log_n, r, p):
     return (MAGIC + bytes([VERSION_V2, file_type, COMPRESS_RAW_DEFLATE,
                            log_n, r, p]) + salt + iv)
@@ -176,7 +168,6 @@ def _peek_header(path):
         version = _read_exact(f, 1, "version")[0]
         file_type = _read_exact(f, 1, "type")[0]
         return version, file_type
-
 
 
 def _stream_deflate_encrypt(f_in, f_out, encryptor):
@@ -292,10 +283,7 @@ def _process_encryption_folder(dir_path, output_path, password,
         raise
 
 
-
 class _PlainReader:
-    
-
     def __init__(self, f_in, decryptor):
         self.f_in = f_in
         self.decryptor = decryptor
@@ -336,9 +324,6 @@ class _PlainReader:
 def _validate_manifest(manifest, dest_root):
     if not isinstance(manifest, list):
         raise InvalidPoopFile("Manifest is not a list.")
-    if len(manifest) > MAX_ENTRIES:
-        raise InvalidPoopFile("Too many entries (zip bomb?).")
-    total = 0
     for entry in manifest:
         name = entry.get("name")
         if not isinstance(name, str) or not name:
@@ -351,9 +336,6 @@ def _validate_manifest(manifest, dest_root):
         size = entry.get("size", 0)
         if not isinstance(size, int) or size < 0:
             raise InvalidPoopFile(f"Bad size in manifest for {name!r}")
-        if total + size > MAX_EXTRACT_SIZE:
-            raise InvalidPoopFile("Total extraction too large (zip bomb?).")
-        total += size
 
 
 def _process_decryption_file(source_path, output_path, password):
@@ -410,10 +392,7 @@ def _process_decryption_file(source_path, output_path, password):
 def _legacy_extract_zip(zip_path, dest_dir):
     os.makedirs(dest_dir, exist_ok=True)
     dest_root = Path(dest_dir).resolve()
-    total = 0
     with zipfile.ZipFile(zip_path) as zf:
-        if len(zf.infolist()) > MAX_ENTRIES:
-            raise InvalidPoopFile("Archive has too many entries.")
         for info in zf.infolist():
             target = (dest_root / info.filename).resolve()
             if target != dest_root and dest_root not in target.parents:
@@ -422,11 +401,6 @@ def _legacy_extract_zip(zip_path, dest_dir):
             mode = (info.external_attr >> 16) & 0o170000
             if mode == 0o120000:
                 raise InvalidPoopFile("Archive contains a symlink.")
-            if (info.file_size > MAX_EXTRACT_SIZE
-                    or total + info.file_size > MAX_EXTRACT_SIZE):
-                raise InvalidPoopFile(
-                    "Archive too large to extract safely (zip bomb?).")
-            total += info.file_size
             zf.extract(info, dest_dir)
 
 
@@ -484,8 +458,6 @@ def _process_decryption_folder(source_path, dest_dir, password):
         decryptor.authenticate_additional_data(aad)
         reader = _PlainReader(f_in, decryptor)
         manifest_len = struct.unpack("<I", reader.read_exact(4, "manifest length"))[0]
-        if manifest_len > MAX_MANIFEST:
-            raise InvalidPoopFile("Manifest is absurdly large.")
         manifest = json.loads(reader.read_exact(manifest_len, "manifest"))
         dest_root = Path(dest_dir).resolve()
         _validate_manifest(manifest, dest_root)
@@ -496,12 +468,7 @@ def _process_decryption_folder(source_path, dest_dir, password):
                 target.parent.mkdir(parents=True, exist_ok=True)
                 d = zlib.decompressobj(wbits=-15)
                 with open(target, "wb") as f_out:
-                    consumed = reader.feed_entry(d, f_out)
-                size = entry.get("size", 0)
-                if consumed and size and size / consumed > MAX_COMPRESSION_RATIO:
-                    raise InvalidPoopFile(
-                        f"Suspicious compression ratio for {entry['name']!r} "
-                        "(zip bomb?).")
+                    reader.feed_entry(d, f_out)
                 if "mtime_ns" in entry:
                     os.utime(target, ns=(entry["mtime_ns"], entry["mtime_ns"]))
                 if "mode" in entry:
@@ -521,7 +488,6 @@ def _process_decryption_folder(source_path, dest_dir, password):
         except Exception:
             shutil.rmtree(dest_dir, ignore_errors=True)
             raise
-
 
 
 def encrypt_target(target_path: str, password: bytes, force: bool = False) -> str:
