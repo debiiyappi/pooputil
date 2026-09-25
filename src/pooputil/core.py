@@ -1,10 +1,8 @@
-"""
-Copyright (C) 2026 debiiyappi <debiiyapp@gmail.com>
+#Copyright (C) 2026 debiiyappi <debiiyapp@gmail.com>
 
-Licensed under the GNU General Public License, Version 3 (GPLv3).
-You are free to copy, modify, and redistribute this software under
-the terms of the license.
-"""
+#Licensed under the GNU General Public License, Version 3 (GPLv3).
+#You are free to copy, modify, and redistribute this software under
+#the terms of the license.
 
 import hashlib
 import json
