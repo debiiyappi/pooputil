@@ -11,6 +11,7 @@ jobs:
     environment: pypi
     permissions:
       id-token: write
+      contents: read
 
     steps:
     - name: Checkout source code
@@ -31,3 +32,5 @@ jobs:
 
     - name: Upload binaries to PyPI via Trusted Publisher
       uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        attestations: false
